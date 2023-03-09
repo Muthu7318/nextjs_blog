@@ -1,17 +1,16 @@
 import React, { Fragment } from "react";
 import { useRouter } from "next/router";
-import { getEventById } from "@/dummy-data";
+import {
+  getAllEvents,
+  getEventById,
+  getFeaturedEvents,
+} from "../../helper/api-util";
 import EventSummary from "@/components/event-detail/event-summary";
 import EventLogistics from "@/components/event-detail/event-logistics";
 import EventContent from "@/components/event-detail/event-content";
 import ErrorAlert from "@/components/ui/error-alert";
 
-function ASingleEvent(props) {
-  const { query } = useRouter();
-  const { eventid } = query;
-
-  const event = getEventById(eventid);
-
+function ASingleEvent({ event }) {
   if (!event) {
     return <ErrorAlert> No Event Found</ErrorAlert>;
   }
@@ -30,6 +29,31 @@ function ASingleEvent(props) {
       </EventContent>
     </Fragment>
   );
+}
+
+export async function getStaticProps(context) {
+  const eventId = context.params.eventid;
+  const event = await getEventById(eventId);
+  if (!event) {
+    return {
+      notFound: true,
+    };
+  }
+  return {
+    props: {
+      event,
+    },
+    revalidate: 10,
+  };
+}
+
+export async function getStaticPaths() {
+  const events = await getFeaturedEvents();
+  const pathArr = events.map((event) => ({ params: { eventid: event.id } }));
+  return {
+    paths: pathArr,
+    fallback: "blocking",
+  };
 }
 
 export default ASingleEvent;
